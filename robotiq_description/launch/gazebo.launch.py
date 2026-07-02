@@ -8,14 +8,28 @@ import xacro
 
 def generate_launch_description():
 
+    # 1. Environment and Path Setup
     pkg = get_package_share_directory('robotiq_description')
+    fruit_models_share = get_package_share_directory('fruit_models')
+    
+    fruit_models_dir = os.path.join(fruit_models_share, 'models')
+    
+    if 'GAZEBO_MODEL_PATH' in os.environ:
+        os.environ['GAZEBO_MODEL_PATH'] += f":{fruit_models_dir}"
+    else:
+        os.environ['GAZEBO_MODEL_PATH'] = fruit_models_dir
 
+    # Explicit path to the orange SDF file for the spawner
+    orange_sdf_path = os.path.join(fruit_models_dir, 'orange', 'model.sdf')
+
+    # 2. Robot Description (URDF/XACRO)
     xacro_file = os.path.join(pkg, 'urdf', 'robotiq_2f_85_gripper.urdf.xacro')
     robot_description = xacro.process_file(xacro_file, mappings={
         'sim_gazebo': 'true',
         'use_fake_hardware': 'true'
     }).toxml()
 
+    # 3. Node Definitions
     robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -47,9 +61,22 @@ def generate_launch_description():
         output='screen'
     )
 
+    spawn_orange = Node(
+        package='gazebo_ros',
+        executable='spawn_entity.py',
+        arguments=['-entity', 'orange',
+                   '-file', orange_sdf_path,  # <--- Changed to use explicit file path
+                   '-x', '0.15',
+                   '-y', '0.0',
+                   '-z', '0.05'],
+        output='screen'
+    )
+
+    # 4. Launch Execution
     return LaunchDescription([
         robot_state_publisher,
         gazebo,
+        spawn_orange,
         spawn_entity,
         RegisterEventHandler(
             event_handler=OnProcessExit(
