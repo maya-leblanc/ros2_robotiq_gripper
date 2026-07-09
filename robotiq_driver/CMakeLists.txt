@@ -16,6 +16,11 @@ find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(serial REQUIRED)
+# Compatibility bridge for the serial-ros2 fork
+if(NOT TARGET serial::serial)
+    add_library(serial::serial INTERFACE IMPORTED)
+    target_link_libraries(serial::serial INTERFACE serial)
+endif()
 
 set(THIS_PACKAGE_INCLUDE_DEPENDS
   ament_cmake

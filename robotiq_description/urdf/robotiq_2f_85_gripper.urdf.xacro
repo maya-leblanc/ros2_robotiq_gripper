@@ -1,14 +1,65 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://wiki.ros.org/xacro" name="robotiq_gripper">
-    <!-- parameters -->
-    <xacro:arg name="use_fake_hardware" default="true" />
+    <xacro:arg name="use_fake_hardware" default="false" />
     <xacro:arg name="com_port" default="/dev/ttyUSB0" />
 
-    <!-- Import macros -->
     <xacro:include filename="$(find robotiq_description)/urdf/robotiq_2f_85_macro.urdf.xacro" />
 
     <link name="world" />
     <xacro:robotiq_gripper name="RobotiqGripperHardwareInterface" prefix="" parent="world" use_fake_hardware="$(arg use_fake_hardware)" com_port="$(arg com_port)">
         <origin xyz="0 0 0" rpy="0 0 0" />
     </xacro:robotiq_gripper>
+
+    <ros2_control name="RobotiqSimHardwareInterface" type="system">
+        <hardware>
+            <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+        </hardware>
+        
+        <joint name="robotiq_85_finger_1_knuckle_joint">
+            <command_interface name="position" />
+            <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+            <state_interface name="velocity"><param name="initial_value">0.0</param></state_interface>
+        </joint>
+
+        <joint name="robotiq_85_finger_2_knuckle_joint">
+            <mimic joint="robotiq_85_finger_1_knuckle_joint" multiplier="1.0" offset="0.0"/>
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+
+        <joint name="robotiq_85_finger_1_inner_knuckle_joint">
+            <mimic joint="robotiq_85_finger_1_knuckle_joint" multiplier="1.0" offset="0.0"/>
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+
+        <joint name="robotiq_85_finger_2_inner_knuckle_joint">
+            <mimic joint="robotiq_85_finger_1_knuckle_joint" multiplier="1.0" offset="0.0"/>
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+
+        <joint name="robotiq_85_finger_1_finger_tip_joint">
+            <mimic joint="robotiq_85_finger_1_knuckle_joint" multiplier="-1.0" offset="0.0"/>
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+
+        <joint name="robotiq_85_finger_2_finger_tip_joint">
+            <mimic joint="robotiq_85_finger_1_knuckle_joint" multiplier="-1.0" offset="0.0"/>
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+    </ros2_control>
+    
+    <gazebo>
+        <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
+            <parameters>$(find robotiq_description)/config/robotiq_controllers.yaml</parameters>
+        </plugin>
+    </gazebo>
 </robot>
